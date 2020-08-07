@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- 后台dao层，用来访问数据库 -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 通过命名空间绑定到接口 -->
+<mapper namespace="com.zhkuchen.project.assess.mapper.TestTaskMapper">
+  <!-- 查询的方法有个returnType -->
+  <!-- xml里面那些对应select的，有个返回类型就是指定实体类或者map -->
+  <resultMap type="TestTask" id="TestTaskResult">
+        <id column="id" property="id"/>
+        <result column="dept_id" property="deptId"/>
+        <result column="examination_id" property="examinationId"/>
+        <result column="user_phonenumber" property="userPhonenumber"/>
+        <result column="is_written" property="isWritten"/>
+        <result column="create_by" property="createBy" />
+        <result column="create_time" property="createTime" />
+        <association property="examination" column="examination_id" javaType="Examination" resultMap="ExaminationResult" />
+        <association property="dept" column="dept_id" javaType="SysDept" resultMap="deptResult" />
+  </resultMap>
+
+  <resultMap type="Examination" id="ExaminationResult">
+        <id column="id" property="id"/>
+        <result column="examination_name" property="examinationName"/>
+        <result column="attention" property="attention"/>
+        <result column="start_time" property="startTime"/>
+        <result column="finish_time" property="finishTime" />
+        <result column="total_score" property="totalScore"/>
+        <result column="status" property="status"/>
+        <result column="remark" property="remark"/>
+  </resultMap>
+
+  <resultMap id="deptResult" type="SysDept">
+    <id     property="deptId"   column="dept_id"     />
+    <result property="parentId" column="parent_id"   />
+    <result property="deptName" column="dept_name"   />
+    <result property="orderNum" column="order_num"   />
+    <result property="leader"   column="leader"      />
+    <result property="status"   column="dept_status" />
+  </resultMap>
+
+  <sql id="selectTestTaskVo">
+    select d.id,d.dept_id,d.examination_id,d.user_phonenumber,d.is_written,d.create_by,d.create_time,
+    dt.dept_id,dt.parent_id,dt.dept_name, dt.order_num, dt.leader, dt.status as dept_status,
+    e.id,e.examination_name,e.attention,e.start_time,e.finish_time,e.total_score,e.status,e.remark
+    from exam_test_task d 
+    left join exam_examination e on d.examination_id = e.id
+    left join sys_dept dt on d.dept_id = dt.dept_id
+  </sql>
+
+  <!-- 模糊查询 -->
+  <select id="findList" resultMap="TestTaskResult" parameterType="TestTask">
+    <include refid="selectTestTaskVo" />
+    <where> 
+      <if  test="userPhonenumber != null and userPhonenumber != ''">
+         AND d.user_phonenumber LIKE CONCAT('%',#{userPhonenumber},'%')
+      </if>
+      <if test="deptId != null and deptId != 0">
+          AND (d.dept_id = #{deptId} OR d.dept_id IN ( SELECT t.dept_id FROM sys_dept t WHERE FIND_IN_SET (#{deptId},ancestors) ))
+      </if>
+    </where>
+    <!-- 数据范围过滤 -->
+      ${dataScope}
+  </select>
+
+  <select id="findListByUserPhonenumber" resultMap="TestTaskResult" parameterType="TestTask">
+      <include refid="selectTestTaskVo" />
+      where d.is_written = '0' and d.user_phonenumber = #{userPhonenumber}
+  </select>
+
+  <select id="findWrittenListByUserPhonenumber" resultMap="TestTaskResult" parameterType="TestTask">
+      <include refid="selectTestTaskVo" />
+      where d.is_written = '1' and d.user_phonenumber = #{userPhonenumber}
+  </select>
+
+  <select id="findListById" resultMap="TestTaskResult" parameterType="Long">
+    <include refid="selectTestTaskVo" />
+    where d.id = #{id}
+  </select>
+
+  <select id="findByDeptIdAndExaminationIdAndUserPhone" resultMap="TestTaskResult" parameterType="TestTask">
+    select d.id,d.dept_id,d.examination_id,d.user_phonenumber,d.is_written,d.create_by,d.create_time
+    from exam_test_task d 
+    where d.dept_id = #{deptId} and d.examination_id = #{examinationId} and d.user_phonenumber = #{userPhonenumber}
+  </select>
+
+  <insert id="insert" parameterType="TestTask" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO exam_test_task (
+      <if test="id != null and id != 0">id,</if>
+      <if test="deptId != null and deptId != 0">dept_id,</if>
+      <if test="examinationId != null and examinationId != 0">examination_id,</if>
+      <if test="userPhonenumber != null">user_phonenumber,</if>
+      <!-- 1为假，0为真 -->
+      <!-- <if test="isWritten != null">is_written,</if> -->
+      <if test="createBy != null and createBy != ''">create_by,</if>
+      create_time
+      )values(
+      <if test="id != null and id != 0">#{id},</if>
+      <if test="deptId != null and deptId != 0">#{deptId},</if>
+      <if test="examinationId != null and examinationId != 0">#{examinationId},</if>
+      <if test="userPhonenumber != null">#{userPhonenumber},</if>
+      <!-- <if test="isWritten != null">#{isWritten},</if> -->
+      <if test="createBy != null and createBy != ''">#{createBy},</if>
+      sysdate()
+    )
+  </insert>
+
+  <update id="update" parameterType="Long">
+    update exam_test_task SET is_written = '1' where id = #{id}
+  </update>
+
+</mapper>
+

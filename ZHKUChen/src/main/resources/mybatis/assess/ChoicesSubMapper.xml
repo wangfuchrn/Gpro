@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- 后台dao层，用来访问数据库 -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 通过命名空间绑定到接口 -->
+<mapper namespace="com.zhkuchen.project.assess.mapper.ChoicesSubMapper">
+    <!-- 查询的方法有个returnType -->
+    <!-- xml里面那些对应select的，有个返回类型就是指定实体类或者map -->
+    <resultMap type="ChoicesSub" id="subjectChoicesResult">
+        <id column="id" property="id"/>
+        <result column="category_id" property="categoryId"/>
+        <result column="subject_name" property="subjectName"/>
+        <result column="answer" property="answer"/>
+        <result column="type" property="type"/>
+        <result column="score" property="score"/>
+        <result column="analysis" property="analysis"/>
+        <result column="level" property="level"/>
+        <result column="create_by" property="createBy"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="del_flag" property="delFlag"/>
+    </resultMap>
+
+    <sql id="selectSubjectChoicesVo">
+        select d.id,d.category_id,d.subject_name,d.type,d.answer,d.score,d.analysis,d.level,d.create_by,d.create_time,d.update_by,d.update_time,d.del_flag,
+        u.category_name,u.id,u.dept_id,
+        dp.dept_id, dp.parent_id, dp.dept_name
+        from exam_subject_choices d
+        left join exam_subject_category u on d.category_id = u.id
+        left join sys_dept dp on u.dept_id =dp.dept_id
+    </sql>
+
+    <select id="getById" resultMap="subjectChoicesResult" parameterType="Long">
+        <!-- <include refid="selectSubjectChoicesVo"/> -->
+        select d.id,d.category_id,d.subject_name,d.type,d.answer,d.score,d.analysis,d.level,d.create_by,d.create_time,d.update_by,d.update_time,d.del_flag
+        from exam_subject_choices d
+        WHERE d.id = #{id} and d.del_flag = '0'
+    </select>
+
+    <select id="get" resultMap="subjectChoicesResult" parameterType="ChoicesSub">
+        <include refid="selectSubjectChoicesVo"/>
+        WHERE d.id = #{id} and d.del_flag = '0'
+    </select>
+
+    <select id="findList" resultMap="subjectChoicesResult" parameterType="Long">
+        select d.id,d.category_id,d.subject_name,d.type,d.answer,d.score,d.analysis,d.level,d.create_by,d.create_time,d.update_by,d.update_time,d.del_flag,
+        u.category_name,u.id,u.dept_id,
+        dp.dept_id, dp.parent_id, dp.dept_name
+        from exam_subject_choices d
+        left join exam_subject_category u on d.category_id = u.id
+        left join sys_dept dp on u.dept_id =dp.dept_id
+        where d.del_flag = '0'
+        <if test="answer != null and answer != ''">
+          AND ((d.type = 3 AND FIND_IN_SET(#{answer},answer)) OR (d.type=0 AND d.answer= #{answer}))
+        </if>
+        <if test="subjectName != null and subjectName != ''">
+            and d.subject_name like CONCAT('%',#{subjectName},'%')
+        </if>
+        <if test="categoryId != null and categoryId != 0">
+          AND (d.category_id = #{categoryId} OR d.category_id IN ( SELECT t.id FROM exam_subject_category t WHERE t.id = #{id}))
+        </if>
+        <!-- 数据范围过滤 -->
+      <!-- ${dataScope} -->
+    </select>
+
+    <select id="findListById" resultMap="subjectChoicesResult" parameterType="Long">
+        <include refid="selectSubjectChoicesVo"/>
+        where d.id = #{id}
+    </select>
+
+    <select id="findSubjectsByExaminationId" resultMap="subjectChoicesResult" parameterType="Long">
+        SELECT d.id,d.category_id,d.subject_name,d.type,d.answer,d.score,d.analysis,d.level,d.create_by,d.create_time,d.update_by,d.update_time,d.del_flag
+        FROM exam_subject_choices d
+        LEFT JOIN exam_examination_subject s ON d.id = s.subject_id
+        LEFT JOIN exam_examination e ON s.examination_id = e.id
+        WHERE e.id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="ChoicesSub">
+        INSERT INTO exam_subject_choices (
+          <if test="id != null and id != 0">id,</if>
+          <if test="categoryId != null and categoryId != 0">category_id,</if>
+          <if test="subjectName != null and subjectName != ''">subject_name,</if>
+          <if test="answer != null and answer != ''">answer,</if>
+          <if test="type != null">type,</if>
+          <if test="score != null and score != 0">score,</if>
+          <if test="analysis != null">analysis,</if>
+          <if test="level != null">level,</if>
+          <if test="createBy != null and createBy != ''">create_by,</if>
+          create_time
+          )values(
+          <if test="id != null and id != 0">#{id},</if>
+          <if test="categoryId != null and categoryId != 0">#{categoryId},</if>
+          <if test="subjectName != null and subjectName != ''">#{subjectName},</if>
+          <if test="answer != null and answer != ''">#{answer},</if>
+          <if test="type != null">#{type},</if>
+          <if test="score != null and score != 0">#{score},</if>
+          <if test="analysis != null">#{analysis},</if>
+          <if test="level != null">#{level},</if>
+          <if test="createBy != null and createBy != ''">#{createBy},</if>
+          sysdate()
+        )
+    </insert>
+
+    <update id="update" parameterType="ChoicesSub">
+        UPDATE exam_subject_choices
+        <set>
+          <if test="categoryId != null">category_id = #{categoryId},</if>
+          <if test="subjectName != null">subject_name = #{subjectName},</if>
+          <if test="answer != null">answer = #{answer},</if>
+          <if test="score != null">score = #{score},</if>
+          <if test="analysis != null">analysis = #{analysis},</if>
+          <if test="level != null">level = #{level},</if>
+          <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+          update_time = sysdate()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete" parameterType="Long">
+        UPDATE exam_subject_choices SET del_flag = '2' WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteAll" parameterType="Long">
+        UPDATE exam_subject_choices SET del_flag = '2' WHERE id IN
+        <foreach item="id" collection="array" open="("
+                 separator="," close=")">#{id}
+        </foreach>
+    </delete>
+
+    <!-- 物理删除 -->
+    <delete id="physicalDelete">
+        DELETE FROM exam_subject_choices WHERE id = #{id}
+    </delete>
+
+    <!-- 物理删除 -->
+    <delete id="physicalDeleteAll">
+        DELETE FROM exam_subject_choices WHERE id in
+        <foreach item="id" collection="array" open="("
+                 separator="," close=")">#{id}
+        </foreach>
+    </delete>
+
+</mapper>

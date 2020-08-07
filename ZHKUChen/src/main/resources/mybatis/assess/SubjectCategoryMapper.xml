@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- 后台dao层，用来访问数据库 -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 通过命名空间绑定到接口 -->
+<mapper namespace="com.zhkuchen.project.assess.mapper.SubjectCategoryMapper">
+  <!-- 查询的方法有个returnType -->
+  <!-- xml里面那些对应select的，有个返回类型就是指定实体类或者map -->
+  <resultMap type="SubjectCategory" id="subjectCategoryResult">
+        <id column="id" property="id"/>
+        <result column="dept_id" property="deptId"/>
+        <result column="category_name" property="categoryName"/>
+        <result column="category_desc" property="categoryDesc"/>
+        <result column="parent_id" property="parentId"/>
+        <result column="ancestry" property="ancestry"/>
+        <result column="order_num" property="orderNum"/>
+        <result column="type" property="type"/>
+        <result column="create_by" property="createBy" />
+        <result column="create_time" property="createTime" />
+        <result column="update_by" property="updateBy" />
+        <result column="update_time" property="updateTime" />
+        <result column="del_flag" property="delFlag"/>
+  </resultMap>
+
+  <sql id="selectSubjectCategoryVo">
+        select d.id,d.dept_id, d.category_name, d.category_desc, d.parent_id, d.ancestry, d.order_num, d.type, d.create_by, d.create_time, d.update_by, d.update_time, d.del_flag, 
+        dt.dept_id, dt.parent_id, dt.dept_name, dt.order_num, dt.leader, dt.status as dept_status
+        from exam_subject_category d
+        left join sys_dept dt on d.dept_id = dt.dept_id
+  </sql>
+
+  <select id="selectSubjectCategoryList" resultMap="subjectCategoryResult" parameterType="SubjectCategory">
+    select d.id,d.dept_id, d.category_name, d.category_desc, d.parent_id, d.ancestry, d.order_num, d.type, d.create_by, d.create_time, d.update_by, d.update_time, d.del_flag, 
+    dt.dept_name, dt.leader
+    from 
+    exam_subject_category d
+    left join sys_dept dt 
+    on d.dept_id = dt.dept_id
+    WHERE d.del_flag = '0'
+    <if test="categoryName != null and categoryName != ''">
+        and d.category_name like CONCAT('%',#{categoryName},'%')
+    </if>
+    <if test="parentId != null">
+        and d.parent_id =#{parent_id}
+    </if>
+    <if test="deptId != null and deptId != 0">
+        AND (d.dept_id = #{deptId} OR d.dept_id IN ( SELECT t.dept_id FROM sys_dept t WHERE FIND_IN_SET (#{deptId},ancestors) ))
+    </if>
+      <!-- 数据范围过滤 -->
+      ${dataScope}
+      order by d.parent_id, d.order_num
+  </select>
+
+  <select id="selectSubjectCategoryById" parameterType="Long" resultMap="subjectCategoryResult">
+    <include refid="selectSubjectCategoryVo" />
+    where d.id = #{id}
+  </select>
+
+  <!-- <select id="checkSubjectCategoryExistUser" parameterType="Long" resultType="int">
+    select count(1) from sys_user where dept_id = #{deptId} and del_flag = '0'
+  </select> -->
+
+  <select id="hasChildById" parameterType="Long" resultType="int">
+    select count(1) from exam_subject_category
+    where del_flag = '0' and parent_id = #{id}
+  </select>
+
+  <select id="selectChildrenSubjectCategoryById" parameterType="Long" resultMap="subjectCategoryResult">
+    select * from exam_subject_category where find_in_set(#{id}, ancestry)
+    <!-- select id, category_name, category_desc, parent_id, ancestors, order_num, type, create_by, create_time, update_by, update_time, del_flag, application_code, tenant_code
+    from exam_subject_category
+    where d.category_name=#{categoryName} -->
+    <!-- where find_in_set(#{id}, ancestors) -->
+  </select>
+
+  <select id="checkCategoryNameUnique" resultMap="subjectCategoryResult">
+    <include refid="selectSubjectCategoryVo" />
+    where d.category_name=#{categoryName}
+  </select>
+
+  <insert id="insertSubjectCategory" parameterType="SubjectCategory">
+    INSERT INTO exam_subject_category (
+      <if test="id != null and id != 0">id,</if>
+      <if test="deptId != null">dept_id,</if>
+      <if test="categoryName != null and categoryName != ''">category_name,</if>
+      <if test="categoryDesc != null">category_desc,</if>
+      <if test="parentId != null">parent_id,</if>
+      <if test="ancestry != null and ancestry != ''">ancestry,</if>
+      <if test="orderNum != null">order_num,</if>
+      <if test="type != null">type,</if>
+      <if test="createBy != null and createBy != ''">create_by,</if>
+      create_time
+      )values(
+      <if test="id != null and id != 0">#{id},</if>
+      <if test="deptId != null">#{deptId},</if>
+      <if test="categoryName != null and categoryName != ''">#{categoryName},</if>
+      <if test="categoryDesc != null">#{categoryDesc},</if>
+      <if test="parentId != null">#{parentId},</if>
+      <if test="ancestry != null and ancestry != ''">#{ancestry},</if>
+      <if test="orderNum != null">#{orderNum},</if>
+      <if test="type != null">#{type},</if>
+      <if test="createBy != null and createBy != ''">#{createBy},</if>
+      sysdate()
+    )
+  </insert>
+
+  <update id="updateSubjectCategory" parameterType="SubjectCategory">
+    update exam_subject_category
+    <set>
+      <if test="deptId != null">dept_id = #{deptId},</if>
+      <if test="categoryName != null and categoryName != ''">category_name = #{categoryName},</if>
+      <if test="categoryDesc != null">category_desc = #{categoryDesc},</if>
+      <if test="parentId != null">parent_id = #{parentId},</if>
+      <if test="ancestry != null and ancestry != ''">ancestry = #{ancestry},</if>
+      <if test="orderNum != null">order_num = #{orderNum},</if>
+      <if test="type != null">type = #{type},</if>
+      <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+      update_time = sysdate()
+    </set>
+    where id = #{id}
+  </update>
+
+  <update id="updateSubjectCategoryChildren" parameterType="java.util.List">
+    update exam_subject_category set ancestry =
+    <foreach collection="subjectCategorys" item="item" index="index" separator=" " open="case id" close="end">
+          when #{item.id} then #{item.ancestry}
+      </foreach>
+    where id in
+    <foreach collection="subjectCategorys" item="item" index="index" separator="," open="(" close=")">
+          #{item.id}
+      </foreach>
+  </update>
+
+  <delete id="deleteSubjectById" parameterType="Long">
+    UPDATE exam_subject_category SET del_flag = '2' WHERE id = #{id}
+  </delete>
+
+</mapper>

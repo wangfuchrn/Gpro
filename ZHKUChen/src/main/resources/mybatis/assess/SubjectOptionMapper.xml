@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- 后台dao层，用来访问数据库 -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 通过命名空间绑定到接口 -->
+<mapper namespace="com.zhkuchen.project.assess.mapper.ChoicesOptionSubMapper">
+  <!-- 查询的方法有个returnType -->
+  <!-- xml里面那些对应select的，有个返回类型就是指定实体类或者map -->
+  <resultMap type="ChoicesOptionSub" id="subjectOptionResult">
+        <id column="id" property="id"/>
+        <result column="subject_choices_id" property="subjectChoicesId"/>
+        <result column="option_name" property="optionName"/>
+        <result column="option_content" property="optionContent"/>
+        <result column="create_by" property="createBy"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="del_flag" property="delFlag"/>
+    </resultMap>
+
+    <sql id="selectSubjectOptionVo">
+        select d.id,d.subject_choices_id,d.option_name,d.option_content,d.create_by,d.create_time,d.update_by,d.update_time,d.del_flag
+        from exam_subject_option d
+          <!-- left join exam_subject_choices c on d.subject_choices_id = c.id -->
+    </sql>
+
+    <select id="getById" resultMap="subjectOptionResult" parameterType="Long">
+        <include refid="selectSubjectOptionVo"/>
+        WHERE d.id = #{id} and d.del_flag = '0'
+    </select>
+
+    <select id="get" resultMap="subjectOptionResult" parameterType="ChoicesOptionSub">
+        <include refid="selectSubjectOptionVo"/>
+        WHERE d.id = #{id} and d.del_flag = '0'
+    </select>
+
+    <select id="findList" resultMap="subjectOptionResult" parameterType="ChoicesOptionSub">
+        select d.id,d.subject_choices_id,d.option_name,d.option_content,d.create_by,d.create_time,d.update_by,d.update_time,d.del_flag
+        from exam_subject_option d
+        left join exam_subject_choices c on d.subject_choices_id = c.id
+        where d.del_flag = '0'
+        <if test="optionName != null and optionName != ''">
+            and d.option_name like CONCAT('%',#{optionName},'%')
+        </if>
+       <!--  <if test="categoryId != null and categoryId != 0">
+          AND (d.subject_choices_id = #{categoryId} OR d.subject_choices_id IN ( SELECT t.id FROM exam_subject_category t WHERE t.id = #{id}))
+        </if> -->
+        <!-- 数据范围过滤 -->
+      <!-- ${dataScope} -->
+    </select>
+
+    <select id="findListById" resultMap="subjectOptionResult" parameterType="Long">
+        <include refid="selectSubjectOptionVo"/>
+        where d.id = #{id}
+    </select>
+
+    <select id="selectBySubjectChoicesId" parameterType="Long" resultMap="subjectOptionResult">
+        <include refid="selectSubjectOptionVo"/>
+        where d.subject_choices_id = #{subjectChoicesId}
+    </select>
+
+    <insert id="insert" parameterType="ChoicesOptionSub">
+        INSERT INTO exam_subject_option (
+          <if test="id != null and id != 0">id,</if>
+          <if test="subjectChoicesId != null and subjectChoicesId != 0">subject_choices_id,</if>
+          <if test="optionName != null and optionName != ''">option_name,</if>
+          <if test="optionContent != null and optionContent != ''">option_content,</if>
+          <if test="createBy != null and createBy != ''">create_by,</if>
+          create_time
+          )values(
+          <if test="id != null and id != 0">#{id},</if>
+          <if test="subjectChoicesId != null and subjectChoicesId != 0">#{subjectChoicesId},</if>
+          <if test="optionName != null and optionName != ''">#{optionName},</if>
+          <if test="optionContent != null and optionContent != ''">#{optionContent},</if>
+          <if test="createBy != null and createBy != ''">#{createBy},</if>
+          sysdate()
+        )
+    </insert>
+
+    <!-- <insert id="insert" parameterType="ChoicesOptionSub">
+        INSERT INTO exam_subject_option (
+          <if test="id != null and id != 0">id,</if>
+          <if test="categoryId != null and categoryId != 0">subject_choices_id,</if>
+          <if test="subjectName != null and subjectName != ''">option_name,</if>
+          <if test="optionContent != null and optionContent != ''">option_content,</if>
+          <if test="createBy != null and createBy != ''">create_by,</if>
+          create_time
+          )values(
+          <if test="id != null and id != 0">#{id},</if>
+          <if test="categoryId != null and categoryId != 0">#{categoryId},</if>
+          <if test="subjectName != null and subjectName != ''">#{subjectName},</if>
+          <if test="optionContent != null and optionContent != ''">#{optionContent},</if>
+          <if test="createBy != null and createBy != ''">#{createBy},</if>
+          sysdate()
+        )
+    </insert> -->
+
+    <update id="update" parameterType="ChoicesOptionSub">
+        UPDATE exam_subject_option
+        <set>
+          <if test="subjectChoicesId != null">subject_choices_id = #{subjectChoicesId},</if>
+          <if test="optionName != null">option_name = #{optionName},</if>
+          <if test="optionContent != null">option_content = #{optionContent},</if>
+          <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+          update_time = sysdate()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete" parameterType="Long">
+        UPDATE exam_subject_option SET del_flag = '2' WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteAll" parameterType="Long">
+        UPDATE exam_subject_option SET del_flag = '2' WHERE id IN
+        <foreach item="id" collection="array" open="("
+                 separator="," close=")">#{id}
+        </foreach>
+    </delete>
+
+    <!-- 物理删除 -->
+    <delete id="physicalDelete">
+        DELETE FROM exam_subject_option WHERE id = #{id}
+    </delete>
+
+    <!-- 物理删除 -->
+    <delete id="physicalDeleteAll">
+        DELETE FROM exam_subject_option WHERE id in
+        <foreach item="id" collection="array" open="("
+                 separator="," close=")">#{id}
+        </foreach>
+    </delete>
+
+</mapper>

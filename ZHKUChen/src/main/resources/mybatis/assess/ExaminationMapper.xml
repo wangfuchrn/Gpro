@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- 后台dao层，用来访问数据库 -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 通过命名空间绑定到接口 -->
+<mapper namespace="com.zhkuchen.project.assess.mapper.ExaminationMapper">
+  <!-- 查询的方法有个returnType -->
+  <!-- xml里面那些对应select的，有个返回类型就是指定实体类或者map -->
+  <resultMap type="Examination" id="ExaminationResult">
+        <id column="id" property="id"/>
+        <result column="dept_id" property="deptId"/>
+        <result column="examination_name" property="examinationName"/>
+        <result column="attention" property="attention"/>
+        <result column="start_time" property="startTime"/>
+        <result column="finish_time" property="finishTime" />
+        <result column="total_score" property="totalScore"/>
+        <result column="status" property="status"/>
+        <result column="remark" property="remark"/>
+        <result column="create_by" property="createBy" />
+        <result column="create_time" property="createTime" />
+        <result column="update_by" property="updateBy" />
+        <result column="update_time" property="updateTime" />
+        <result column="del_flag" property="delFlag"/>
+        <association column="dept_id" property="dept" javaType="SysDept" resultMap="deptResult" />
+  </resultMap>
+  
+  <resultMap id="deptResult" type="SysDept">
+    <id     property="deptId"   column="dept_id"     />
+    <result property="parentId" column="parent_id"   />
+    <result property="deptName" column="dept_name"   />
+    <result property="orderNum" column="order_num"   />
+    <result property="leader"   column="leader"      />
+    <result property="status"   column="dept_status" />
+  </resultMap>
+
+  <sql id="selectExaminationVo">
+        select d.id,d.dept_id,d.examination_name,d.attention,d.start_time,d.finish_time,d.total_score,d.status,d.remark,d.create_by,d.create_time,d.update_by,d.update_time,d.del_flag,
+        dt.dept_id,dt.parent_id,dt.dept_name, dt.order_num, dt.leader, dt.status as dept_status
+        from exam_examination d
+        left join sys_dept dt on d.dept_id = dt.dept_id
+  </sql>
+
+  <!-- 模糊查询 -->
+  <select id="findList" resultMap="ExaminationResult" parameterType="Examination">
+      select d.id,d.dept_id,d.examination_name,d.attention,d.start_time,d.finish_time,d.total_score,d.status,d.remark,d.create_by,d.create_time,d.update_by,d.update_time,d.del_flag,
+      dt.dept_name, dt.leader
+      from exam_examination d
+      left join sys_dept dt on d.dept_id = dt.dept_id
+      WHERE d.del_flag = '0'
+      <if test="examinationName != null and examinationName != ''">
+          and d.examination_name like CONCAT('%',#{examinationName},'%')
+      </if>
+      <if test="deptId != null and deptId != 0">
+        and d.dept_id = #{deptId}
+         OR d.dept_id IN ( SELECT t.dept_id FROM sys_dept t WHERE FIND_IN_SET (#{deptId},ancestors) )
+      </if>
+      <!-- 数据范围过滤 -->
+      ${dataScope}
+    </select>
+
+  <select id="findListById" resultMap="ExaminationResult" parameterType="Long">
+    <include refid="selectExaminationVo" />
+    where d.id = #{id}
+  </select>
+
+  <select id="findById" resultMap="ExaminationResult" parameterType="Long">
+    select d.id,d.dept_id,d.examination_name,d.attention,d.start_time,d.finish_time,d.total_score,d.status,d.remark,d.create_by,d.create_time,d.update_by,d.update_time,d.del_flag
+    from exam_examination d
+    where d.id = #{id}
+  </select>
+
+  <insert id="insert" parameterType="Examination" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO exam_examination (
+      <if test="id != null and id != 0">id,</if>
+      <if test="deptId != null and deptId != 0">dept_id,</if>
+      <if test="examinationName != null and examinationName != ''">examination_name,</if>
+      <if test="attention != null">attention,</if>
+      <if test="startTime != null">start_time,</if>
+      <if test="finishTime != null">finish_time,</if>
+      <if test="totalScore != null">total_score,</if>
+      <if test="status != null">status,</if>
+      <if test="remark != null">remark,</if>
+      <if test="createBy != null and createBy != ''">create_by,</if>
+      create_time
+      )values(
+      <if test="id != null and id != 0">#{id},</if>
+      <if test="deptId != null and deptId != 0">#{deptId},</if>
+      <if test="examinationName != null and examinationName != ''">#{examinationName},</if>
+      <if test="attention != null">#{attention},</if>
+      <if test="startTime != null">#{startTime},</if>
+      <if test="finishTime != null">#{finishTime},</if>
+      <if test="totalScore != null">#{totalScore},</if>
+      <if test="status != null">#{status},</if>
+      <if test="remark != null">#{remark},</if>
+      <if test="createBy != null and createBy != ''">#{createBy},</if>
+      sysdate()
+    )
+  </insert>
+
+  <update id="update" parameterType="Examination">
+    update exam_examination
+    <set>
+      <if test="deptId != null">dept_id = #{deptId},</if>
+      <if test="examinationName != null and examinationName != ''">examination_name = #{examinationName},</if>
+      <if test="attention != null">attention = #{attention},</if>
+      <if test="startTime != null">start_time = #{startTime},</if>
+      <if test="finishTime != null">finish_time = #{finishTime},</if>
+      <if test="totalScore != null">total_score = #{totalScore},</if>
+      <if test="status != null">status = #{status},</if>
+      <if test="remark != null">remark = #{remark},</if>
+      <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+      update_time = sysdate()
+    </set>
+    where id = #{id}
+  </update>
+
+  <update id="updateExamStatus" parameterType="Long">
+    update exam_examination
+    <set>
+      <if test="status != null and status != 1">status = 1</if>
+    </set>
+    where id = #{id}
+  </update>
+  
+  <delete id="delete" parameterType="Long">
+      UPDATE exam_examination SET del_flag = '2' WHERE id = #{id}
+  </delete>
+
+  <delete id="deleteAll" parameterType="Long">
+      UPDATE exam_examination SET del_flag = '2' WHERE id in
+      <foreach collection="array" item="id" open="(" separator="," close=")">
+        #{id}
+      </foreach> 
+  </delete>
+</mapper>

@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- 后台dao层，用来访问数据库 -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 通过命名空间绑定到接口 -->
+<mapper namespace="com.zhkuchen.project.assess.mapper.ExaminationSubjectMapper">
+  <!-- 查询的方法有个returnType -->
+  <!-- xml里面那些对应select的，有个返回类型就是指定实体类或者map -->
+    <resultMap id="examinationSubjectResult" type="ExaminationSubject">
+        <id column="id" property="id"/>
+        <result column="examination_id" property="examinationId"/>
+        <result column="category_id" property="categoryId"/>
+        <result column="subject_id" property="subjectId"/>
+    </resultMap>
+    
+    <sql id="selectExaminationSubjectVo">
+        SELECT d.id,d.examination_id,d.category_id,d.subject_id
+        FROM exam_examination_subject d
+    </sql>
+
+    <select id="findByExaminationIdAndSubjectId" resultMap="examinationSubjectResult">
+        <include refid="selectExaminationSubjectVo"/>
+        WHERE d.examination_id = #{examinationId} and d.subject_id = #{subjectId}
+    </select>
+
+    <select id="findList" resultMap="examinationSubjectResult">
+        <include refid="selectExaminationSubjectVo"/>
+        WHERE 1=1
+        <if test="examinationId != null">
+            and d.examination_id = #{examinationId}
+        </if>
+        <if test="subjectId != null">
+            and d.subject_id = #{subjectId}
+        </if>
+        <choose>
+            <when test="categoryId == -1">
+                and d.category_id != ''
+            </when>
+            <when test="categoryId != null">
+                and d.category_id = #{categoryId}
+            </when>
+        </choose>
+        <!-- ORDER BY d.subject_id ASC -->
+    </select>
+
+    <select id="findListBySubjectId" resultMap="examinationSubjectResult">
+        <include refid="selectExaminationSubjectVo"/>
+        WHERE d.subject_id = #{subjectId}
+    </select>
+
+    <select id="findListById" resultMap="examinationSubjectResult">
+        <include refid="selectExaminationSubjectVo"/>
+        WHERE d.id IN
+        <foreach collection="ids" index="index" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </select>
+
+    <!-- 根据上一题ID查询下一题 -->
+    <select id="getByPreviousId" resultMap="examinationSubjectResult">
+        <include refid="selectExaminationSubjectVo"/>
+        WHERE d.subject_id > #{subjectId} AND d.examination_id = #{examinationId} 
+        ORDER BY subject_id ASC LIMIT 1
+    </select>
+
+    <!-- 根据当前题目ID查询上一题 -->
+    <select id="getPreviousByCurrentId" resultMap="examinationSubjectResult">
+        <include refid="selectExaminationSubjectVo"/>
+        WHERE d.subject_id <![CDATA[<]]> #{subjectId} AND d.examination_id = #{examinationId} 
+        ORDER BY subject_id DESC LIMIT 1
+    </select>
+
+    <select id="findListByCategoryId" resultMap="examinationSubjectResult">
+        <include refid="selectExaminationSubjectVo"/>
+        WHERE d.category_id = #{categoryId}
+    </select>
+
+    <insert id="insert" parameterType="ExaminationSubject">
+      insert into exam_examination_subject (
+        <if test="id != null and id != 0">id,</if>
+        <if test="examinationId != null">examination_id,</if>
+        <if test="categoryId != null">category_id,</if>
+        <if test="subjectId != null">subject_id</if>
+      )values(
+        <if test="id != null and id != 0">#{id},</if>
+        <if test="examinationId != null">#{examinationId},</if>
+        <if test="categoryId != null">#{categoryId},</if>
+        <if test="subjectId != null">#{subjectId}</if>
+      )
+    </insert>
+
+    <update id="update" parameterType="ExaminationSubject">
+      update exam_examination_subject
+      <set>
+        <if test="examinationId != null">examination_id = #{examinationId},</if>
+        <if test="categoryId != null">category_id = #{categoryId},</if>
+        <if test="subjectId != null">subject_id = #{subjectId},</if>
+      </set>
+      where id = #{id}
+    </update>
+
+    <!--  <delete id="delete" parameterType="Long">
+        UPDATE exam_examination_subject SET del_flag = '2' WHERE id = #{id}
+    </delete> -->
+
+    <!-- 物理删除 -->
+    <delete id="deleteBySubjectId" parameterType="Long">
+        DELETE FROM exam_examination_subject WHERE subject_id = #{subjectId}
+    </delete>
+
+    <delete id="deleteAll" parameterType="Long">
+        UPDATE exam_examination_subject SET del_flag = '2' WHERE id in
+        <foreach collection="array" item="id" open="(" separator="," close=")">
+          #{id}
+        </foreach> 
+    </delete>
+
+</mapper>

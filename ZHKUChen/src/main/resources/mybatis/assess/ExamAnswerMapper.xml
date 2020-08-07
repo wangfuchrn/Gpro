@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- 后台dao层，用来访问数据库 -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 通过命名空间绑定到接口 -->
+<mapper namespace="com.zhkuchen.project.assess.mapper.ExamAnswerMapper">
+  <!-- 查询的方法有个returnType -->
+  <!-- xml里面那些对应select的，有个返回类型就是指定实体类或者map -->
+  <resultMap type="ExamAnswer" id="ExamAnswerResult">
+        <id column="id" property="id"/>
+        <result column="exam_record_id" property="examRecordId"/>
+        <result column="subject_id" property="subjectId"/>
+        <result column="answer" property="answer"/>
+        <result column="answer_type" property="answerType"/>
+        <result column="score" property="score"/>
+        <result column="mark_status" property="markStatus"/>
+        <result column="create_by" property="createBy" />
+        <result column="create_time" property="createTime" />
+        <result column="update_by" property="updateBy" />
+        <result column="update_time" property="updateTime" />
+        <result column="del_flag" property="delFlag"/>
+  </resultMap>
+
+  <sql id="selectExamAnswerVo">
+    select d.id,d.exam_record_id,d.subject_id,d.answer,d.answer_type,d.score,d.mark_status,d.create_by,d.create_time,d.update_by,d.update_time,d.del_flag
+     from exam_answer d
+  </sql>
+
+  <select id="getAnswerBySubjectAndExamRecordId" resultMap="ExamAnswerResult">
+    <include refid="selectExamAnswerVo"/>
+    where d.subject_id = #{subjectId} and d.exam_record_id = #{examRecordId}
+  </select>
+
+  <select id="findList" resultMap="ExamAnswerResult">
+      <include refid="selectExamAnswerVo"/>
+      WHERE d.del_flag = '0'
+      <if test="subjectId != null and subjectId != ''">
+        and d.subject_id = #{subjectId}
+      </if>
+      <if test="answerType != null and answerType != ''">
+        and d.answer_type = #{answerType}
+      </if>
+      <if test="markStatus != null and markStatus != ''">
+        and d.mark_status = #{markStatus}
+      </if>
+  </select>
+
+  <select id="findById" resultMap="ExamAnswerResult" parameterType="Long">
+    <include refid="selectExamAnswerVo"/>
+    WHERE d.del_flag = '0' AND d.id = #{id}
+  </select>
+
+  <select id="getAnswerByExamRecordId" resultMap="ExamAnswerResult">
+    select d.id,d.exam_record_id,d.subject_id,d.answer,d.answer_type,d.score,d.mark_status,d.create_by,d.create_time,d.update_by,d.update_time,d.del_flag
+     from exam_answer d
+     WHERE d.del_flag = '0' AND d.exam_record_id = #{examRecordId}
+  </select>
+
+  <insert id="insert" parameterType="ExamAnswer">
+    INSERT INTO exam_answer (
+      <if test="id != null and id != 0">id,</if>
+      <if test="examRecordId != null and examRecordId != 0">exam_record_id,</if>
+      <if test="subjectId != null and subjectId != 0">subject_id,</if>
+      <if test="answer != null">answer,</if>
+      <if test="answerType != null">answer_type,</if>
+      <if test="score != null">score,</if>
+      <if test="markStatus != null">mark_status,</if>
+      <if test="createBy != null and createBy != ''">create_by,</if>
+      create_time
+      )values(
+      <if test="id != null and id != 0">#{id},</if>
+      <if test="examRecordId != null and examRecordId != 0">#{examRecordId},</if>
+      <if test="subjectId != null and subjectId != 0">#{subjectId},</if>
+      <if test="answer != null">#{answer},</if>
+      <if test="answerType != null">#{answerType},</if>
+      <if test="score != null">#{score},</if>
+      <if test="markStatus != null">#{markStatus},</if>
+      <if test="createBy != null and createBy != ''">#{createBy},</if>
+      sysdate()
+    )
+  </insert>
+
+  <update id="update" parameterType="ExamAnswer">
+    update exam_answer
+    <set>
+      <if test="examRecordId != null">exam_record_id = #{examRecordId},</if>
+      <if test="subjectId != null">subject_id = #{subjectId},</if>
+      <if test="answer != null and answer != ''">answer = #{answer},</if>
+      <if test="answerType != null">answer_type = #{answerType},</if>
+      <if test="score != null">score = #{score},</if>
+      <if test="markStatus != null">mark_status = #{markStatus},</if>
+      <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+      update_time = sysdate()
+    </set>
+    where id = #{id}
+  </update>
+
+  <delete id="delete">
+    UPDATE exam_answer SET del_flag = '2' WHERE id = #{id}
+  </delete>
+
+</mapper>
+
+
